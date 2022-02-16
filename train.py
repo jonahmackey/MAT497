@@ -1,5 +1,3 @@
-#CJ -s '../../data' '/scratch/users/papyan/datasets'
-
 import torch
 
 from exper.experiment import Experiment
