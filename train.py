@@ -4,9 +4,6 @@ from exper.experiment import Experiment
 from utils.accuracy import compute_accuracy
 from utils.dataset_properties import get_dataset_properties
 
-
-# blah blah blah
-
 dataset_list    = [
                     'MNIST',
                     'FashionMNIST',
