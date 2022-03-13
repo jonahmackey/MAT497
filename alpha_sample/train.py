@@ -1,16 +1,38 @@
+#cj -s '../../data' '/scratch/jmackey/CJRepo/datasets'
+
 import torch
 
 from exper.experiment import Experiment
 from utils.accuracy import compute_accuracy
 from utils.dataset_properties import get_dataset_properties
 
+# dataset_list    = [
+#                     'MNIST',
+#                     'FashionMNIST',
+#                     'CIFAR10',
+#                     'CIFAR100',
+#                     'STL10',
+#                     'SVHN',
+#                    ]
+
+# net_list        = [
+#                     'MLP',
+#                     'LeNet',
+#                    ]
+
+# lr_list           = [
+#                      0.5,
+#                      0.1,
+#                      0.05,
+#                      0.01,
+#                      ]
+
+# for dataset_idx in range(6):
+#     for net_idx in range(2):
+#         for lr_idx in range(4):
+
 dataset_list    = [
                     'MNIST',
-                    'FashionMNIST',
-                    'CIFAR10',
-                    'CIFAR100',
-                    'STL10',
-                    'SVHN',
                    ]
 
 net_list        = [
@@ -21,13 +43,11 @@ net_list        = [
 lr_list           = [
                      0.5,
                      0.1,
-                     0.05,
-                     0.01,
                      ]
 
-for dataset_idx in range(6):
+for dataset_idx in range(1):
     for net_idx in range(2):
-        for lr_idx in range(4):
+        for lr_idx in range(2):
 
             im_size, num_classes, input_ch, size_dataset \
             = get_dataset_properties(dataset_list[dataset_idx])
