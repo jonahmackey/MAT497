@@ -112,3 +112,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Folders/files
+/dataset/socal/JPEGImages
+/alpha_sample
+/surgeon_vs_ai
+/Notes.md

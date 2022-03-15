@@ -8,11 +8,6 @@ class Meter(object):
 
     This class is abstract, but provides a standard interface for all meters to follow.
     '''
-
-    def reset(self):
-        '''Resets the meter to default settings.'''
-        pass
-
     def add(self):
         '''Log a new value to the meter.'''
         pass
@@ -20,6 +15,11 @@ class Meter(object):
     def value(self):
         '''Get the value of the meter in the current state.'''
         pass
+      
+    def reset(self):
+      '''Resets the meter to default settings.'''
+      pass
+
     
     
 class MSEMeter(Meter):
@@ -28,17 +28,20 @@ class MSEMeter(Meter):
         self.reset()
         self.root = root
 
-    def reset(self):
-        self.n = 0
-        self.sesum = 0
-
     def add(self, output, target, n=1):
         self.n += n
         self.sesum += ((output - target) ** 2).sum().item()
 
     def value(self):
+        if self.n == 0:
+            return np.nan
+      
         mse = self.sesum / max(1, self.n)
         return math.sqrt(mse) if self.root else mse
+      
+    def reset(self):
+        self.n = 0
+        self.sesum = 0
       
     
 class AccuracyMeter(Meter):
@@ -52,15 +55,15 @@ class AccuracyMeter(Meter):
         self.n += n
       
     def value(self):
-      if self.n == 0:
-        return np.nan
+        if self.n == 0:
+            return np.nan
       
-      else:
-        return 100 * (self.correct / self.n)
-      
+        else:
+            return 100 * (self.correct / max(self.n, 1))
+        
     def reset(self):
-      self.correct = 0
-      self.n = 0
+        self.correct = 0
+        self.n = 0
       
       
 class AverageMeter(Meter):
