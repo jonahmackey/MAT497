@@ -100,8 +100,6 @@ class Experiment:
                   phase,
                   epoch,
                   loader,
-                  stats_meter,
-                  stats_no_meter,
                   results):
         
         # meters
@@ -149,33 +147,32 @@ class Experiment:
                 self.optimizer.step()
                     
             # record statistics
-            for name, func in stats_meter.items():
-                meters[name].update(func(locals()), input.data.shape[0])
-                
-            meters['loss'].update(float(loss.item()))
+            meters['loss'].add(float(loss.item()))
             
             if self.task == 'SF':
-                meters['sf'].add(pred, target, input.data.shape[0])
+                meters['accuracy'].add(pred, target, input.data.shape[0])
             else: # EBL
-                meters['rmse'].add()
+                meters['rmse'].add(pred, target, input.data.shape[0])
                 
             # print statistics
-            output = '{}\t'                                                 \
-                     'Network: {}\t'                                        \
-                     'Dataset: {}\t'                                        \
-                     'Epoch: [{}/{}][{}/{}]\t'                              \
-                     .format(phase.capitalize(),
-                             self.net,
-                             self.dataset,
-                             epoch,
-                             self.epochs,
-                             iter,
-                             len(loader))
+            # output = '{}\t'                                                 \
+            #          'Network: {}\t'                                        \
+            #          'Dataset: {}\t'                                        \
+            #          'Epoch: [{}/{}][{}/{}]\t'                              \
+            #          .format(phase.capitalize(),
+            #                  self.net,
+            #                  self.dataset,
+            #                  epoch,
+            #                  self.epochs,
+            #                  iter,
+            #                  len(loader))
                      
-            for name, meter in meters.items(): 
-                output = output + '{}: {meter.val:.4f} ({meter.avg:.4f})\t' \
-                                  .format(name, meter=meter)
+            # for name, meter in meters.items(): 
+            #     output = output + '{}: {meter.val:.4f} ({meter.avg:.4f})\t' \
+            #                       .format(name, meter=meter)
             
+            output = '{}: {meter.val:.4f} ({meter.avg:.4f})\t'.format('loss', meter=meters['loss'])
+
             print(output)
             sys.stdout.flush()
             
@@ -184,17 +181,16 @@ class Experiment:
                 if iter == len(loader):
                     
                     stats = {'phase'             : phase,
-                             'dataset'           : self.dataset,
                              'epoch'             : epoch,
                              'iter'              : iter,
                              'iters'             : len(loader)}
                     
-                    for name, meter in meters.items():
-                        stats['iter_'+name] = meter.val
-                        stats['avg_'+name]  = meter.avg
                     
-                    for name, func in stats_no_meter.items():
-                        stats[name] = func(locals())
+                    stats['iter_loss'] = meters['loss'].val
+                    stats['avg_loss'] = meters['loss'].avg
+                    
+                    stats['rmse'] = meters['rmse'].value()
+                    stats['accuracy'] = meters['accuracy'].value()
 
                     results.append(dict(self.__getstate__(), **stats))
                     
@@ -206,8 +202,6 @@ class Experiment:
         
         # remove fields that should not be saved
         attributes = [
-                      'train_transform',
-                      'test_transform',
                       'train_loader',
                       'test_loader',
                       'model',

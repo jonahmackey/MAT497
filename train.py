@@ -1,10 +1,7 @@
 #cj -s './socal' '/scratch/jmackey/CJRepo/socal'
 
-
 import torch
-
 from experiment.experiment import Experiment
-from utils.accuracy import compute_accuracy
 
 
 dataset_opts  = {
@@ -42,17 +39,6 @@ opts = dict(dataset_opts, **net_opts)
 opts = dict(opts, **train_opts)
 opts = dict(opts, results_opts)
 
-def compute_accuracy_aux(variables, k):
-    return compute_accuracy(variables['pred'].data, variables['target'].data, topk=(k,))[0][0]
-
-stats_meter    = {'top1': lambda variables: float(compute_accuracy_aux(variables, 1).item()),
-                  'rmse': lambda variables: float(variables['rmse']).item(),
-                  'loss': lambda variables: float(variables['loss'].item()),
-                  }
-
-stats_no_meter = {}
-
 exp = Experiment(opts)
-
-exp.run(stats_meter, stats_no_meter)
+exp.run()
 
