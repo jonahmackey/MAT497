@@ -10,14 +10,14 @@ class SOCAL(Dataset):
                  train=False, 
                  frame_res=224,
                  downsample_fac=1,
-                 dataset_path='./socal'):
+                 dataset_path='../../../socal'):
         
         self.train = train
         self.downsample_fac = downsample_fac
         self.dataset_path = dataset_path
         self.images_dir = dataset_path + '/JPEGImages/' # folder containing individual frames
         self.frame_to_trial = pd.read_csv(dataset_path + '/frame_to_trial_mapping.csv') # frame to trial csv
-        self.outcomes = pd.read_csv(dataset_path + 'socal_trial_outcomes.csv') # outcomes csv
+        self.outcomes = pd.read_csv(dataset_path + '/socal_trial_outcomes.csv') # outcomes csv
 
         self.mean = [81.8088/255, 22.7293/255, 29.7582/255]
         self.std = [89.6872/255, 40.6592/255, 48.3578/255]
