@@ -6,7 +6,7 @@ from collections import OrderedDict
 
 
 class AASP_Model(nn.Module):
-  def __init__(self, pretrained_resnet=True, embed_dim=512, nhead=8, num_layers=6, dropout=0.1, learn_norm=False):
+  def __init__(self, pretrained_resnet=True, embed_dim=512, nhead=8, num_layers=6, dropout=0.1):
     """
     embed_dim = feature dimension
     nhead = number of heads in multihead attention
@@ -29,7 +29,7 @@ class AASP_Model(nn.Module):
     encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=nhead, dropout=dropout, batch_first=True)
     self.transformer = nn.TransformerEncoder(encoder_layer=encoder_layer, 
                                              num_layers=num_layers, 
-                                             norm=nn.LayerNorm(normalized_shape=embed_dim, elementwise_affine=learn_norm)) # transformer encoder
+                                             norm=nn.LayerNorm(normalized_shape=embed_dim)) # transformer encoder
 
     self.classifier = nn.Linear(in_features=embed_dim, out_features=1)
 
@@ -68,7 +68,7 @@ class AASP_Model(nn.Module):
 
 
 class AASP_Model_S(nn.Module):
-  def __init__(self, embed_dim=512, nhead=8, num_layers=6, dropout=0.1, learn_norm=False, apply_sigmoid=False):
+  def __init__(self, embed_dim=512, nhead=8, num_layers=6, dropout=0.1):
     """
     embed_dim = feature dimension
     nhead = number of heads in multihead attention
@@ -76,9 +76,7 @@ class AASP_Model_S(nn.Module):
     """
     super(AASP_Model_S, self).__init__()
 
-    self.apply_sigmoid = apply_sigmoid
-
-    vgg = vgg19(pretrained=True)
+    vgg = vgg19(pretrained=False)
     self.resnet_base = nn.Sequential(OrderedDict(list(vgg.named_children())[:-2]))
 
     self.global_avg_pool = nn.AdaptiveAvgPool2d((1, 1))
@@ -92,12 +90,9 @@ class AASP_Model_S(nn.Module):
     encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=nhead, dropout=dropout, batch_first=True, norm_first=True)
     self.transformer = nn.TransformerEncoder(encoder_layer=encoder_layer, 
                                              num_layers=num_layers, 
-                                             norm=nn.LayerNorm(normalized_shape=embed_dim, elementwise_affine=learn_norm)) # transformer encoder
+                                             norm=nn.LayerNorm(normalized_shape=embed_dim)) # transformer encoder
 
     self.classifier = nn.Linear(in_features=embed_dim, out_features=1)
-
-    if self.apply_sigmoid:
-      self.sigmoid = nn.Sigmoid()
 
   def forward(self, X):
     # input shape = (1, S, 3, H, W)
@@ -117,9 +112,6 @@ class AASP_Model_S(nn.Module):
     
     # out prediction
     X = self.classifier(X[0])
-
-    if self.apply_sigmoid:
-      X = self.sigmoid(X)
 
     return X
   

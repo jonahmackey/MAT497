@@ -1,9 +1,11 @@
+from re import T
 import sys
 import torch
 import random
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+import pandas as pd
 
 from os import makedirs
 from utils.dump import DumpJSON
@@ -48,7 +50,7 @@ class Experiment:
         if self.task == "SF":
             self.loss = nn.BCEWithLogitsLoss(reduction='sum')
         else: # EBL
-            self.loss = nn.MSELoss()
+            self.loss = nn.MSELoss(reduction='sum')
         
         # optimizer and learning rate schedualer
         self.optimizer = optim.Adam(self.model.parameters(),
@@ -58,7 +60,7 @@ class Experiment:
         # self.lr_scheduler = MultiStepLR(self.optimizer, milestones=self.milestones, gamma=self.gamma)
             
 
-    def run(self, stats_meter, stats_no_meter):
+    def run(self):
         # seed
         random.seed(self.seed)
         torch.manual_seed(self.seed)
@@ -72,29 +74,24 @@ class Experiment:
             #     self.lr_scheduler.step()
             
             # json dump file
-            results_src_old = self.training_results_path + '/results_epoch='+str(epoch - 1)
-            results_src = self.training_results_path + '/results_epoch='+str(epoch)
-            results = DumpJSON(read_path=(results_src_old+'.json'),write_path=(results_src+'.json'))
+            results_path = self.training_results_path + '/' + self.train_dump_file
+            results = DumpJSON(read_path=results_path,write_path=results_path)
             
             # train
             results = self.run_epoch("train",
                                      epoch,
                                      self.train_loader,
-                                     stats_meter,
-                                     stats_no_meter,
                                      results)  
             # test
             results = self.run_epoch("test",
                                        epoch,
                                        self.test_loader,
-                                       stats_meter,
-                                       stats_no_meter,
                                        results)
             
             # dump to json
             results.save()
-            results.to_csv()
-            
+        
+        results.to_csv()    
             
     def run_epoch(self,
                   phase,
@@ -103,15 +100,12 @@ class Experiment:
                   results):
         
         # meters
-        meters = {}
-        meters['accuracy'] = AccuracyMeter()
-        meters['loss'] = AverageMeter()
+        meters = {
+            'loss': AverageMeter(),
+            'accuracy': AccuracyMeter(),
+            'rmse': MSEMeter(root=True)
+        }
         
-        if self.task == 'SF':
-            meters['accuracy'] = AccuracyMeter()
-        else: # EBL
-            meters['rmse'] = MSEMeter(root=True)
-
         # switch phase
         if phase == 'train':
             self.model.train()
@@ -130,8 +124,8 @@ class Experiment:
             else: # EBL
                 target = ebl
             
-            if not isinstance(target, torch.LongTensor):
-                target = target.view(input.shape[0], -1).type(torch.LongTensor)
+            # if not isinstance(target, torch.LongTensor):
+            #     target = target.type(torch.LongTensor)
             
             input = input.to(self.device)
             target = target.to(self.device)
@@ -153,46 +147,34 @@ class Experiment:
                 meters['accuracy'].add(pred, target, input.data.shape[0])
             else: # EBL
                 meters['rmse'].add(pred, target, input.data.shape[0])
-                
-            # print statistics
-            # output = '{}\t'                                                 \
-            #          'Network: {}\t'                                        \
-            #          'Dataset: {}\t'                                        \
-            #          'Epoch: [{}/{}][{}/{}]\t'                              \
-            #          .format(phase.capitalize(),
-            #                  self.net,
-            #                  self.dataset,
-            #                  epoch,
-            #                  self.epochs,
-            #                  iter,
-            #                  len(loader))
-                     
-            # for name, meter in meters.items(): 
-            #     output = output + '{}: {meter.val:.4f} ({meter.avg:.4f})\t' \
-            #                       .format(name, meter=meter)
-            
-            output = '{}: {meter.val:.4f} ({meter.avg:.4f})\t'.format('loss', meter=meters['loss'])
-
-            print(output)
-            sys.stdout.flush()
             
             # append row to results CSV file
             if results is not None:
                 if iter == len(loader):
                     
-                    stats = {'phase'             : phase,
-                             'epoch'             : epoch,
-                             'iter'              : iter,
-                             'iters'             : len(loader)}
-                    
-                    
-                    stats['iter_loss'] = meters['loss'].val
-                    stats['avg_loss'] = meters['loss'].avg
-                    
-                    stats['rmse'] = meters['rmse'].value()
-                    stats['accuracy'] = meters['accuracy'].value()
+                    stats = {'phase': phase,
+                             'epoch': epoch,
+                             'iters': len(loader),
+                             'iter_loss': meters['loss'].val,
+                             'avg_loss': meters['loss'].avg,
+                             'rmse': meters['rmse'].value(),
+                             'accuracy': meters['accuracy'].value()
+                             }
 
                     results.append(dict(self.__getstate__(), **stats))
+            
+            output =    '{}\t' +\
+                        'Loss: {meter.val:.4f} ({meter.avg:.4f})\t' +\
+                        'Epoch: [{}/{}][{}/{}]\t' \
+                        .format(phase.capitalize(),
+                                epoch,
+                                self.epochs,
+                                iter,
+                                len(loader),
+                                meter=meters['loss'])
+
+            print(output)
+            sys.stdout.flush()
                     
         return results
     

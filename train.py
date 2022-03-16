@@ -5,14 +5,14 @@ from experiment.experiment import Experiment
 
 for i in range(1):
     dataset_opts  = {
-                    'frame_res': 224,
-                    'downsample_fac': 1,
+                    'frame_res': 64,
+                    'downsample_fac': 4,
                     'dataset_path': '../../../socal'
                     }
 
     net_opts = {
                 'embed_dim': 512,
-                'num_layers': 6,
+                'num_layers': 2,
                 'nhead': 8,
                 'pe': False,
                 'dropout': 0
@@ -22,7 +22,7 @@ for i in range(1):
                     'task': 'SF',
                     'optim': 'Adam',
                     'weight_decay': 1e-4,
-                    'epochs': 20,
+                    'epochs': 2,
                     'lr': 0.001,
                     'milestones': [],
                     'gamma': 0.1,

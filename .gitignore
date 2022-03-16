@@ -114,7 +114,6 @@ dmypy.json
 .pyre/
 
 # Folders/files
-/dataset/socal/JPEGImages
 /alpha_sample
-/surgeon_vs_ai
 /Notes.md
+/main.py
