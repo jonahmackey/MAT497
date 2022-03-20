@@ -37,20 +37,33 @@ class BasicBlock(nn.Module):
         base_width: int = 64,
         dilation: int = 1,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
+        norm: str = 'BN'
     ) -> None:
         super().__init__()
-        if norm_layer is None:
-            norm_layer = nn.BatchNorm2d
         if groups != 1 or base_width != 64:
             raise ValueError("BasicBlock only supports groups=1 and base_width=64")
         if dilation > 1:
             raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
         self.conv1 = conv3x3(inplanes, planes, stride)
-        self.norm1 = norm_layer(planes)
+        
+        if norm == 'BN':
+            self.norm1 = norm_layer(num_features=planes)
+        elif norm == 'LN':
+            self.norm1 = norm_layer(num_groups=1, num_channels=planes)
+        else: # IN
+            self.norm1 = norm_layer(num_groups=planes, num_channels=planes)
+            
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes)
-        self.norm2 = norm_layer(planes)
+        
+        if norm == 'BN':
+            self.norm2 = norm_layer(num_features=planes)
+        elif norm == 'LN':
+            self.norm2 = norm_layer(num_groups=1, num_channels=planes)
+        else: # IN
+            self.norm2 = norm_layer(num_groups=planes, num_channels=planes)
+            
         self.downsample = downsample
         self.stride = stride
 
@@ -92,18 +105,38 @@ class Bottleneck(nn.Module):
         base_width: int = 64,
         dilation: int = 1,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
+        norm: str = 'BN'
     ) -> None:
         super().__init__()
-        if norm_layer is None:
-            norm_layer = nn.BatchNorm2d
         width = int(planes * (base_width / 64.0)) * groups
         # Both self.conv2 and self.downsample layers downsample the input when stride != 1
         self.conv1 = conv1x1(inplanes, width)
-        self.norm1 = norm_layer(width)
+        
+        if norm == 'BN':
+            self.norm1 = norm_layer(num_features=width)
+        elif norm == 'LN':
+            self.norm1 = norm_layer(num_groups=1, num_channels=width)
+        else: # IN
+            self.norm1 = norm_layer(num_groups=width, num_channels=width)
+            
         self.conv2 = conv3x3(width, width, stride, groups, dilation)
-        self.norm2 = norm_layer(width)
+        
+        if norm == 'BN':
+            self.norm2 = norm_layer(num_features=width)
+        elif norm == 'LN':
+            self.norm2 = norm_layer(num_groups=1, num_channels=width)
+        else: # IN
+            self.norm2 = norm_layer(num_groups=width, num_channels=width)
+        
         self.conv3 = conv1x1(width, planes * self.expansion)
-        self.norm3 = norm_layer(planes * self.expansion)
+        
+        if norm == 'BN':
+            self.norm3 = norm_layer(num_features=planes*self.expansion)
+        elif norm == 'LN':
+            self.norm3 = norm_layer(num_groups=1, num_channels=planes*self.expansion)
+        else: # IN
+            self.norm3 = norm_layer(num_groups=planes*self.expansion, num_channels=planes*self.expansion)
+        
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
@@ -140,14 +173,15 @@ class ResNet(nn.Module):
         groups: int = 1,
         width_per_group: int = 64,
         replace_stride_with_dilation: Optional[List[bool]] = None,
-        norm: str = "LN",
+        norm: str = 'BN',
     ) -> None:
         super().__init__()
-
         if norm == 'LN' or norm == 'IN':
             norm_layer = nn.GroupNorm
+        elif norm == 'BN':
+            norm_layer = nn.BatchNorm2d
         else:
-            raise Exception('norm must be IN or LN!')        
+            raise Exception('norm must be IN, LN, or BN!')        
         
         self.norm = norm
         self._norm_layer = norm_layer
@@ -167,7 +201,9 @@ class ResNet(nn.Module):
         self.base_width = width_per_group
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
         
-        if self.norm == "LN":
+        if self.norm == 'BN':
+            self.norm1 = norm_layer(num_features=self.inplanes)
+        elif self.norm == 'LN':
             self.norm1 = norm_layer(num_groups=1, num_channels=self.inplanes)
         else: # IN
             self.norm1 = norm_layer(num_groups=self.inplanes, num_channels=self.inplanes)
@@ -186,8 +222,9 @@ class ResNet(nn.Module):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
-        # Zero-initialize the last norm layer in each residual branch,
+        # Zero-initialize the last norm in each residual branch,
         # so that the residual branch starts with zeros, and each residual block behaves like an identity.
+        # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
         if zero_init_residual:
             for m in self.modules():
                 if isinstance(m, Bottleneck):
@@ -204,21 +241,33 @@ class ResNet(nn.Module):
         dilate: bool = False,
     ) -> nn.Sequential:
         norm_layer = self._norm_layer
+        norm = self.norm
         downsample = None
         previous_dilation = self.dilation
         if dilate:
             self.dilation *= stride
             stride = 1
         if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample = nn.Sequential(
-                conv1x1(self.inplanes, planes * block.expansion, stride),
-                norm_layer(planes * block.expansion),
-            )
+            if self.norm == 'BN':
+                downsample = nn.Sequential(
+                    conv1x1(self.inplanes, planes * block.expansion, stride),
+                    norm_layer(planes * block.expansion),
+                )
+            elif self.norm == 'LN':
+                downsample = nn.Sequential(
+                    conv1x1(self.inplanes, planes * block.expansion, stride),
+                    norm_layer(num_groups=1, num_channels=planes * block.expansion),
+                )
+            else: # IN
+                downsample = nn.Sequential(
+                    conv1x1(self.inplanes, planes * block.expansion, stride),
+                    norm_layer(num_groups=planes * block.expansion, num_channels=planes * block.expansion),
+                )
 
         layers = []
         layers.append(
             block(
-                self.inplanes, planes, stride, downsample, self.groups, self.base_width, previous_dilation, norm_layer
+                self.inplanes, planes, stride, downsample, self.groups, self.base_width, previous_dilation, norm_layer, norm
             )
         )
         self.inplanes = planes * block.expansion
@@ -231,6 +280,7 @@ class ResNet(nn.Module):
                     base_width=self.base_width,
                     dilation=self.dilation,
                     norm_layer=norm_layer,
+                    norm=norm
                 )
             )
 
@@ -257,31 +307,32 @@ class ResNet(nn.Module):
 def _resnet(
     block: Type[Union[BasicBlock, Bottleneck]],
     layers: List[int],
+    norm: str,
     **kwargs: Any,
 ) -> ResNet:
     model = ResNet(block, layers, **kwargs)
     return model
 
 
-def resnet18(**kwargs: Any) -> ResNet:
+def resnet18(norm, **kwargs: Any) -> ResNet:
     r"""ResNet-18 model from
     `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
     
     """
-    return _resnet(block=BasicBlock, layers=[2, 2, 2, 2], **kwargs)
+    return _resnet(BasicBlock, [2, 2, 2, 2], norm, **kwargs)
 
 
-def resnet34(**kwargs: Any) -> ResNet:
+def resnet34(norm, **kwargs: Any) -> ResNet:
     r"""ResNet-34 model from
     `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
     
     """
-    return _resnet(block=BasicBlock, layers=[3, 4, 6, 3], **kwargs)
+    return _resnet(BasicBlock, [3, 4, 6, 3], norm, **kwargs)
 
 
-def resnet50(**kwargs: Any) -> ResNet:
+def resnet50(norm, **kwargs: Any) -> ResNet:
     r"""ResNet-50 model from
     `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
     
     """
-    return _resnet(block=Bottleneck, layers=[3, 4, 6, 3], **kwargs)
+    return _resnet(Bottleneck, [3, 4, 6, 3], norm, **kwargs)
