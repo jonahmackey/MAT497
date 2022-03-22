@@ -96,7 +96,7 @@ for enc_model_idx in range(2):
                             'optim': 'Adam', 
                             'betas': (0.9, 0.98), 
                             'weight_decay': 1e-4, 
-                            'epochs': 1, 
+                            'epochs': 300, 
                             'initial_lr': 0.0,
                             'lr_max': lr_max_list[lr_max_idx],
                             't_warmup': t_warmup_list[t_warmup_idx],
