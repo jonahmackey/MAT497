@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from resnet import resnet18, resnet34, resnet50
-from transformer import TransformerEncoderLayer, TransformerEncoder, PositionalEncoding
+from .resnet import resnet18, resnet34, resnet50
+from .transformer import TransformerEncoderLayer, TransformerEncoder, PositionalEncoding
 
 
 class AASP_Model(nn.Module):

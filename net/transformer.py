@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 from torch.nn import Dropout, Linear, LayerNorm, ModuleList, MultiheadAttention, Module
-import torch.functional as F
+import torch.nn.functional as F
 
 
 class TransformerEncoder(Module):
