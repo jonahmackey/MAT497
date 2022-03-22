@@ -9,11 +9,11 @@ import pandas as pd
 
 from os import makedirs
 from utils.dump import DumpJSON
-# from utils.lr_scheduler import MultiStepLR
+from utils.lr_scheduler import WarmUpLR
 from utils.meters import AccuracyMeter, MSEMeter, AverageMeter
 
 from dataset.socal import SOCAL
-from net.aasp_model import AASP_Model_S
+from net.aasp_model import AASP_Model
 
 class Experiment:
     def __init__(self, opts):
@@ -39,25 +39,34 @@ class Experiment:
         self.test_loader = DataLoader(socal_test, batch_size=1)
         
         # model
-        self.model = AASP_Model_S(embed_dim=self.embed_dim, 
-                                  nhead=self.nhead,
-                                  num_layers=self.num_layers,
-                                  dropout=self.dropout
-                                  )
+        self.model = AASP_Model(enc_model=self.enc_model, 
+                                enc_norm=self.enc_norm,
+                                num_layers=self.num_layers,
+                                num_heads=self.num_heads,
+                                embed_dim=self.embed_dim,
+                                norm_first=self.norm_first,
+                                pe=self.pe,
+                                dropout=self.dropout)
         self.model.to(self.device)
         
         # loss
-        if self.task == "SF":
+        if self.task == 'SF':
             self.loss = nn.BCEWithLogitsLoss(reduction='sum')
-        else: # EBL
+        elif self.task == 'EBL': 
             self.loss = nn.MSELoss(reduction='sum')
+        else:
+            raise Exception('Task must be EBL or SF!')
         
-        # optimizer and learning rate schedualer
-        self.optimizer = optim.Adam(self.model.parameters(),
-                                    lr=self.lr,
-                                    weight_decay=self.weight_decay)
+        # optimizer and learning rate scheduler
+        self.optimizer = optim.Adam(params=self.model.parameters(),
+                                    lr=self.initial_lr,
+                                    betas=self.betas,
+                                    weight_decay=self.weight_decay
+                                    )
         
-        # self.lr_scheduler = MultiStepLR(self.optimizer, milestones=self.milestones, gamma=self.gamma)
+        self.lr_scheduler = WarmUpLR(optimizer=self.optimizer, 
+                                     lr_max=self.lr_max, 
+                                     t_warmup=self.t_warmup)
             
 
     def run(self):
@@ -68,10 +77,6 @@ class Experiment:
         
         # starts at the last epoch
         for epoch in range(1, self.epochs + 1):
-
-            # adjust learning rate
-            # if self.lr_scheduler:
-            #     self.lr_scheduler.step()
             
             # json dump file
             results_path = self.training_results_path + '/' + self.train_dump_file
@@ -124,9 +129,6 @@ class Experiment:
             else: # EBL
                 target = ebl
             
-            # if not isinstance(target, torch.LongTensor):
-            #     target = target.type(torch.LongTensor)
-            
             input = input.to(self.device)
             target = target.to(self.device)
 
@@ -139,6 +141,10 @@ class Experiment:
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+                
+            # adjust learning rate
+            if self.lr_scheduler is not None:
+                self.lr_scheduler.step()
                     
             # record statistics
             meters['loss'].add(float(loss.item()))
@@ -190,7 +196,9 @@ class Experiment:
                       'loss',
                       'optimizer',
                       'lr_scheduler',
+                      'dataset_path',
                       'device',
+                      'seed'
                       ]
         
         for attr in attributes:
