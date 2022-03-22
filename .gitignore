@@ -112,3 +112,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# # Folders/files
+# /alpha_sample
+# /Notes.md
+# /main.py

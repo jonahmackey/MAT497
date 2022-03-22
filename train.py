@@ -1,88 +1,119 @@
+#cj -s '../../../socal' '../../../socal'
+
 import torch
 
-from exper.experiment import Experiment
-from utils.accuracy import compute_accuracy
-from utils.dataset_properties import get_dataset_properties
+from experiment.experiment import Experiment
 
-dataset_list    = [
-                    'MNIST',
-                    'FashionMNIST',
-                    'CIFAR10',
-                    'CIFAR100',
-                    'STL10',
-                    'SVHN',
-                   ]
 
-net_list        = [
-                    'MLP',
-                    'LeNet',
-                   ]
+# task_list = [
+#     'SF',
+#     'EBL'
+# ]
 
-lr_list           = [
-                     0.5,
-                     0.1,
-                     0.05,
-                     0.01,
-                     ]
+# Image encoder
+enc_model_list = [
+    'resnet18',
+    # 'resnet34',
+    'resnet50',
+]
 
-for dataset_idx in range(6):
-    for net_idx in range(2):
-        for lr_idx in range(4):
+enc_norm_list = [
+    'LN',
+    'IN',
+    # 'BN',
+]
 
-            im_size, num_classes, input_ch, size_dataset \
-            = get_dataset_properties(dataset_list[dataset_idx])
+# enc_lr_list = [
+#     0.1, 
+#     0.01,
+#     0
+# ]
 
-            loader_opts  = {
-                            'dataset'           : dataset_list[dataset_idx],
-                            'loader_type'       : 'Natural',
-                            'pytorch_dataset'   : True,
-                            'dataset_path'      : '../../data',
-                            'im_size'           : im_size,
-                            'padded_im_size'    : im_size,
-                            'num_classes'       : num_classes,
-                            'input_ch'          : input_ch,
-                            'threads'           : 4,
-                            'epc_seed'          : 0,
-                            }
+# Transformer
+num_layer_list = [
+    2,
+    # 6, 
+    8,
+]
 
-            optim_kwargs = {
-                            'weight_decay'      : 5e-4,
-                            'momentum'          : 0.9,
-                            }
+norm_first_list = [
+    True, 
+    False
+]
 
-            train_opts   = {
-                            'crit'              : 'CrossEntropyLoss',
-                            'net'               : net_list[net_idx],
-                            'optim'             : 'SGD',
-                            'optim_kwargs'      : optim_kwargs,
-                            'epochs'            : 2,
-                            # 'epochs'            : 20,
-                            'lr'                : lr_list[lr_idx],
-                            'milestones'        : [],
-                            'gamma'             : 0.1,
-                            'train_batch_size'  : 2**7,
-                            'test_batch_size'   : 2**9,
-                            'device'            : torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
-                            'seed'              : 0,
-                            }
+# pe_list = [
+#     True, 
+#     False
+# ]
 
-            results_opts = {
+t_warmup_list = [
+    1, 
+    500, 
+    # 4000
+]
+
+lr_max_list = [
+    1e-2,
+    1e-3,
+    # 1e-4
+]
+
+# dropout_list = [
+#     0.0,
+#     0.1,
+#     0.3
+# ]
+
+for enc_model_idx in range(2): 
+    for enc_norm_idx in range(2): 
+        for num_layer_idx in range(2): 
+            for norm_first_idx in range(2): 
+                for t_warmup_idx in range(2):
+                    for lr_max_idx in range(2): 
+
+                        dataset_opts  = {
+                            'frame_res': 224, 
+                            'downsample_fac': 1, 
+                            'dataset_path': '../../../socal' 
+                        }
+
+                        img_enc_opts = {
+                            'enc_model': enc_model_list[enc_model_idx], 
+                            'enc_norm': enc_norm_list[enc_norm_idx], 
+                        }
+                        
+                        transformer_opts = {
+                            'num_layers': num_layer_list[num_layer_idx], 
+                            'num_heads': 8, 
+                            'embed_dim': 512,
+                            'norm_first': norm_first_list[norm_first_idx], 
+                            'pe': False,
+                            'dropout': 0.1, 
+                        }
+
+                        train_opts   = {
+                            'task': 'SF', 
+                            'optim': 'Adam', 
+                            'betas': (0.9, 0.98), 
+                            'weight_decay': 1e-4, 
+                            'epochs': 300, 
+                            'initial_lr': 0.0,
+                            'lr_max': lr_max_list[lr_max_idx],
+                            't_warmup': t_warmup_list[t_warmup_idx],
+                            'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+                            'seed': 0,
+                        }
+
+                        results_opts = {
                             'training_results_path': './results',
                             'train_dump_file'   : 'training_results.json',
-                            }
+                        }
 
-            opts = dict(loader_opts, **train_opts)
-            opts = dict(opts, **results_opts)
+                        opts = dict(dataset_opts, **img_enc_opts)
+                        opts = dict(opts, **transformer_opts)
+                        opts = dict(opts, **train_opts)
+                        opts = dict(opts, **results_opts)
 
-            def compute_accuracy_aux(variables,k):
-                return compute_accuracy(variables['est'].data, variables['target'].data, topk=(k,))[0][0]
+                        exp = Experiment(opts)
+                        exp.run()
 
-            stats_meter    = {'top1' : lambda variables: float(compute_accuracy_aux(variables, 1).item()),
-                              'loss' : lambda variables: float(variables['loss'].item()),
-                              }
-
-            stats_no_meter = {}
-
-            exp = Experiment(opts)
-
-            exp.run(stats_meter, stats_no_meter)
