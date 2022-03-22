@@ -24,12 +24,12 @@ class WarmUpLR(object):
         self.optimizer = optimizer
         
         optimizer.param_groups[0].setdefault('initial_lr', optimizer.param_groups[0]['lr'])
-    
-        self.step(0)
-        self.last_iter = 0
-        
+
         self.lr_max = lr_max
         self.t_warmup = t_warmup
+        
+        self.step(0)
+        self.last_iter = 0
 
     def get_lr(self):
         if self.last_iter <= self.t_warmup:    

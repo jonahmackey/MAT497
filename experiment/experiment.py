@@ -169,18 +169,18 @@ class Experiment:
 
                     results.append(dict(self.__getstate__(), **stats))
             
-            output =    '{}\t' +\
-                        'Loss: {meter.val:.4f} ({meter.avg:.4f})\t' +\
-                        'Epoch: [{}/{}][{}/{}]\t' \
-                        .format(phase.capitalize(),
-                                epoch,
-                                self.epochs,
-                                iter,
-                                len(loader),
-                                meter=meters['loss'])
+        output =    '{}\t' +\
+                    'Loss: {meter.val:.4f} ({meter.avg:.4f})\t' +\
+                    'Epoch: [{}/{}][{}/{}]\t' \
+                    .format(phase.capitalize(),
+                            epoch,
+                            self.epochs,
+                            iter,
+                            len(loader),
+                            meter=meters['loss'])
 
-            print(output)
-            sys.stdout.flush()
+        print(output)
+        sys.stdout.flush()
                     
         return results
     
