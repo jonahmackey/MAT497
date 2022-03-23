@@ -72,7 +72,7 @@ for enc_model_idx in range(2):
                     for lr_max_idx in range(2): 
 
                         dataset_opts  = {
-                            'frame_res': 224, 
+                            'frame_res': 64, 
                             'downsample_fac': 1, 
                             'dataset_path': '../../../socal' 
                         }
