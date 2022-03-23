@@ -75,6 +75,17 @@ class Experiment:
         torch.manual_seed(self.seed)
         torch.cuda.manual_seed_all(self.seed)
         
+        # meters
+        meters = {
+            'loss': AverageMeter(),
+            'accuracy': AccuracyMeter(),
+            'rmse': MSEMeter(root=True)
+        }
+        
+        best_test_accuracy = 0
+        best_test_rmse = 1e10
+        best_model_path = './results/best_model.pt'
+        
         # starts at the last epoch
         for epoch in range(1, self.epochs + 1):
             
@@ -82,16 +93,48 @@ class Experiment:
             results_path = self.training_results_path + '/' + self.train_dump_file
             results = DumpJSON(read_path=results_path,write_path=results_path)
             
+            for name in meters:
+                meters[name].reset()
+            
             # train
             results = self.run_epoch("train",
                                      epoch,
                                      self.train_loader,
-                                     results)  
+                                     results, 
+                                     meters)  
+            
+            for name in meters:
+                meters[name].reset()
+                
             # test
             results = self.run_epoch("test",
                                        epoch,
                                        self.test_loader,
-                                       results)
+                                       results, 
+                                       meters)
+            
+            # if model gets new best test value, save it
+            if self.task == 'SF':
+                if meters['accuracy'].value() > best_test_accuracy:
+                    best_test_accuracy = meters['accuracy'].value()
+                    
+                    torch.save({'epoch': epoch, 
+                                'model_state_dict': self.model.state_dict(), 
+                                'optimizer_state_dict': self.optimizer.state_dict(),
+                                'test_accuracy': best_test_accuracy,
+                                'task': self.task}, 
+                               best_model_path)
+                    
+            elif self.task == 'EBL':
+                if meters['rmse'].value() < best_test_rmse:
+                    best_test_rmse = meters['rmse'].value()
+                    
+                    torch.save({'epoch': epoch, 
+                                'model_state_dict': self.model.state_dict(), 
+                                'optimizer_state_dict': self.optimizer.state_dict(),
+                                'test_rmse': best_test_rmse,
+                                'task': self.task}, 
+                               best_model_path)
             
             # dump to json
             results.save()
@@ -102,14 +145,8 @@ class Experiment:
                   phase,
                   epoch,
                   loader,
-                  results):
-        
-        # meters
-        meters = {
-            'loss': AverageMeter(),
-            'accuracy': AccuracyMeter(),
-            'rmse': MSEMeter(root=True)
-        }
+                  results, 
+                  meters):
         
         # switch phase
         if phase == 'train':
@@ -169,7 +206,7 @@ class Experiment:
 
                     results.append(dict(self.__getstate__(), **stats))
             
-        output = '{}\tLoss: {meter.val:.4f} ({meter.avg:.4f})\tEpoch: [{}/{}]\t'.format(phase.capitalize(), epoch, self.epochs, meter=meters['loss'])
+        output = '{}\t{}\tLoss: {meter.val:.4f} ({meter.avg:.4f})\tEpoch: [{}/{}]\t'.format(self.task, phase.capitalize(), epoch, self.epochs, meter=meters['loss'])
 
         print(output)
         sys.stdout.flush()
