@@ -35,8 +35,8 @@ class Experiment:
                            downsample_fac=self.downsample_fac, 
                            dataset_path=self.dataset_path)
         
-        self.train_loader = DataLoader(socal_train, batch_size=1)
-        self.test_loader = DataLoader(socal_test, batch_size=1)
+        self.train_loader = DataLoader(socal_train, batch_size=1, shuffle=True)
+        self.test_loader = DataLoader(socal_test, batch_size=1, shuffle=True)
         
         # model
         self.model = AASP_Model(enc_model=self.enc_model, 
@@ -122,6 +122,10 @@ class Experiment:
                                 'model_state_dict': self.model.state_dict(), 
                                 'optimizer_state_dict': self.optimizer.state_dict(),
                                 'test_accuracy': best_test_accuracy,
+                                'enc_model': self.enc_model,
+                                'enc_norm': self.enc_norm,
+                                'num_layers': self.num_layers,
+                                'norm_first': self.norm_first,
                                 'task': self.task}, 
                                best_model_path)
                     
@@ -133,6 +137,10 @@ class Experiment:
                                 'model_state_dict': self.model.state_dict(), 
                                 'optimizer_state_dict': self.optimizer.state_dict(),
                                 'test_rmse': best_test_rmse,
+                                'enc_model': self.enc_model,
+                                'enc_norm': self.enc_norm,
+                                'num_layers': self.num_layers,
+                                'norm_first': self.norm_first,
                                 'task': self.task}, 
                                best_model_path)
             
@@ -179,9 +187,9 @@ class Experiment:
                 loss.backward()
                 self.optimizer.step()
                 
-            # adjust learning rate
-            if self.lr_scheduler is not None:
-                self.lr_scheduler.step()
+                # adjust learning rate
+                if self.lr_scheduler is not None:
+                    self.lr_scheduler.step()
                     
             # record statistics
             meters['loss'].add(float(loss.item()))

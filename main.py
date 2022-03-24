@@ -7,8 +7,14 @@ import json
 import pandas as pd
 import torch.optim as optim
 from utils.lr_scheduler import WarmUpLR
+from utils.meters import AverageMeter
 
 if __name__ == "__main__":
-    output =    '{}\tLoss: {} ({})\tEpoch: [{}/{}][{}/{}]'.format('Train'.capitalize(), 29, 0.6, 0.7, 129, 0.5, 200)
-                    
-    print(output)
+    a = AverageMeter()
+    
+    a.add(0.8)
+    
+    print(a.val)
+    print(a.sum)
+    print(a.n)
+    print(a.avg)

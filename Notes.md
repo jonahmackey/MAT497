@@ -16,7 +16,7 @@
 - lr scheduler 
 - warm up stage: T_warmup, lr_max (5e-4 or 1e-3 (Adam), 5e-3 or 1e-3 (SGD))
 - dropout
-- TRAIN WITH DT-Fixup
+- TRAIN WITH DT-Fixup?
 
 ## Optimizer:
 - Betas (0.9, 0.98)
