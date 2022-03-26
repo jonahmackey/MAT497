@@ -20,7 +20,7 @@ from experiment.experiment import Experiment
 enc_norm_list = [
     'LN',
     'IN',
-    # 'BN',
+    'BN',
 ]
 
 # enc_lr_list = [
@@ -46,38 +46,38 @@ norm_first_list = [
 #     False
 # ]
 
-t_warmup_list = [
-    # 1, 
-    500, 
-    4000
-]
+# t_warmup_list = [
+#     # 1, 
+#     500, 
+#     4000
+# ]
 
 lr_max_list = [
     1e-2,
-    1e-3,
-    # 1e-4
+    # 1e-3,
+    1e-1
 ]
 
-# dropout_list = [
-#     0.0,
-#     0.1,
-#     0.3
-# ]
+dropout_list = [
+    0.0,
+    0.1,
+    # 0.3
+]
 
-for enc_norm_idx in range(2): 
+for enc_norm_idx in range(3): 
     for num_layer_idx in range(2): 
         for norm_first_idx in range(2): 
-            for t_warmup_idx in range(2):
+            for dropout_idx in range(2):
                 for lr_max_idx in range(2): 
 
                     dataset_opts  = {
                         'frame_res': 64, 
-                        'downsample_fac': 4, 
+                        'downsample_fac': 1, 
                         'dataset_path': '../../../socal' 
                     }
 
                     img_enc_opts = {
-                        'enc_model': 'resnet18', #
+                        'enc_model': 'resnet18',
                         'enc_norm': enc_norm_list[enc_norm_idx], 
                     }
                     
@@ -87,18 +87,18 @@ for enc_norm_idx in range(2):
                         'embed_dim': 512,
                         'norm_first': norm_first_list[norm_first_idx], 
                         'pe': False,
-                        'dropout': 0.1, 
+                        'dropout': dropout_list[dropout_idx], 
                     }
 
                     train_opts   = {
-                        'task': 'SF', #
+                        'task': 'EBL', 
                         'optim': 'Adam', 
                         'betas': (0.9, 0.98), 
                         'weight_decay': 1e-4, 
-                        'epochs': 300, 
+                        'epochs': 200, 
                         'initial_lr': 0.0,
                         'lr_max': lr_max_list[lr_max_idx],
-                        't_warmup': t_warmup_list[t_warmup_idx],
+                        't_warmup': 4000,
                         'device': torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
                         'seed': 0,
                     }

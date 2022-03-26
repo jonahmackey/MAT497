@@ -25,6 +25,8 @@ class Experiment:
         except:
             pass
         
+        self.configuration = f"task={self.task},enc_model={self.enc_model},enc_norm={self.enc_norm},num_layers={self.num_layers},norm_first={self.norm_first},pe={self.pe},lr_max={self.lr_max}".replace(".", "p")
+        
         # datasets and loaders
         socal_train = SOCAL(train=True, 
                             frame_res=self.frame_res, 
@@ -81,10 +83,9 @@ class Experiment:
             'accuracy': AccuracyMeter(),
             'rmse': MSEMeter(root=True)
         }
-        
-        best_test_accuracy = 0
-        best_test_rmse = 1e10
-        best_model_path = './results/best_model.pt'
+
+        best_test_loss = 1e10
+        best_model_path = self.configuration
         
         # starts at the last epoch
         for epoch in range(1, self.epochs + 1):
@@ -114,40 +115,29 @@ class Experiment:
                                        meters)
             
             # if model gets new best test value, save it
-            if self.task == 'SF':
-                if meters['accuracy'].value() > best_test_accuracy:
-                    best_test_accuracy = meters['accuracy'].value()
-                    
+            if meters['loss'].value() <= best_test_loss:
+                best_test_loss = meters['loss'].value()
+            
+                if self.task == 'SF':
                     torch.save({'epoch': epoch, 
                                 'model_state_dict': self.model.state_dict(), 
                                 'optimizer_state_dict': self.optimizer.state_dict(),
-                                'test_accuracy': best_test_accuracy,
-                                'enc_model': self.enc_model,
-                                'enc_norm': self.enc_norm,
-                                'num_layers': self.num_layers,
-                                'norm_first': self.norm_first,
-                                'task': self.task}, 
-                               best_model_path)
+                                'test_accuracy': meters['accuracy'].value(),
+                                'test_loss': meters['loss'].value()},
+                                best_model_path + ".pt")
                     
-            elif self.task == 'EBL':
-                if meters['rmse'].value() < best_test_rmse:
-                    best_test_rmse = meters['rmse'].value()
-                    
+                elif self.task == 'EBL':
                     torch.save({'epoch': epoch, 
                                 'model_state_dict': self.model.state_dict(), 
                                 'optimizer_state_dict': self.optimizer.state_dict(),
-                                'test_rmse': best_test_rmse,
-                                'enc_model': self.enc_model,
-                                'enc_norm': self.enc_norm,
-                                'num_layers': self.num_layers,
-                                'norm_first': self.norm_first,
-                                'task': self.task}, 
-                               best_model_path)
+                                'test_rmse': meters['rmse'].value(),
+                                'test_loss': meters['loss'].value()},
+                                best_model_path + ".pt")
             
             # dump to json
             results.save()
         
-        results.to_csv()    
+        results.to_csv()
             
     def run_epoch(self,
                   phase,
@@ -209,7 +199,7 @@ class Experiment:
                              'iter_loss': meters['loss'].val,
                              'avg_loss': meters['loss'].avg,
                              'rmse': meters['rmse'].value(),
-                             'accuracy': meters['accuracy'].value()
+                             'accuracy': meters['accuracy'].value(),
                              }
 
                     results.append(dict(self.__getstate__(), **stats))
