@@ -25,7 +25,7 @@ class Experiment:
         except:
             pass
         
-        self.configuration = f"task={self.task},enc_model={self.enc_model},enc_norm={self.enc_norm},num_layers={self.num_layers},norm_first={self.norm_first},pe={self.pe},lr_max={self.lr_max}".replace(".", "p")
+        self.configuration = f"task={self.task},enc_model={self.enc_model},enc_norm={self.enc_norm},num_layers={self.num_layers},norm_first={self.norm_first},pe={self.pe},lr_max={self.lr_max},t_warmup={self.t_warmup},freeze_base={self.freeze_base}".replace(".", "p")
         
         # datasets and loaders
         socal_train = SOCAL(train=True, 
@@ -41,8 +41,13 @@ class Experiment:
         self.test_loader = DataLoader(socal_test, batch_size=1, shuffle=True)
         
         # model
+        if self.pretrained:
+            self.enc_norm = 'BN'
+        
         self.model = AASP_Model(enc_model=self.enc_model, 
                                 enc_norm=self.enc_norm,
+                                pretrained=self.pretrained,
+                                freeze_base=self.freeze_base,
                                 num_layers=self.num_layers,
                                 num_heads=self.num_heads,
                                 embed_dim=self.embed_dim,

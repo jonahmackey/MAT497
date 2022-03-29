@@ -1,11 +1,14 @@
 import torch
 import torch.nn as nn
+import torchvision
 from .resnet import resnet18, resnet34, resnet50
 from .transformer import TransformerEncoderLayer, TransformerEncoder, PositionalEncoding
 
+from collections import OrderedDict
+
 
 class AASP_Model(nn.Module):
-    def __init__(self, enc_model: str, enc_norm: str, num_layers: int, num_heads: int, 
+    def __init__(self, enc_model: str, enc_norm: str, pretrained: bool, freeze_base: bool, num_layers: int, num_heads: int, 
                  embed_dim: int, norm_first: bool, pe: bool, dropout: float):
         """AASP (Automatic Assessment of Neurosurgical Performance) Model.
 
@@ -29,13 +32,50 @@ class AASP_Model(nn.Module):
         self.norm_first = norm_first
         self.pe = pe
         self.dropout = dropout
+        self.pretrained = pretrained
+        self.freeze_base = freeze_base
         
         if enc_model == 'resnet18':
-            self.features = resnet18(norm=enc_norm)
+            if pretrained:
+                weights = torch.load("../../../model_weights/resnet18-f37072fd.pth")
+                resnet = torchvision.models.resnet18(pretrained=False) 
+                resnet.load_state_dict(weights)
+                
+                self.features = nn.Sequential(OrderedDict(list(resnet.named_children())[:-2])) 
+                
+                if freeze_base:
+                    for layer in self.features.parameters():
+                        layer.requires_grad = False
+            else:
+                self.features = resnet18(norm=enc_norm)
+                
         elif enc_model == 'resnet34':
-            self.features = resnet34(norm=enc_norm)
+            if pretrained:
+                weights = torch.load("../../../model_weights/resnet34-b627a593.pth")
+                resnet = torchvision.models.resnet34(pretrained=False) 
+                resnet.load_state_dict(weights)
+                
+                self.features = nn.Sequential(OrderedDict(list(resnet.named_children())[:-2])) 
+                
+                if freeze_base:
+                    for layer in self.features.parameters():
+                        layer.requires_grad = False
+            else:
+                self.features = resnet34(norm=enc_norm)
+                
         elif enc_model == 'resnet50':
-            self.features = resnet50(norm=enc_norm)
+            if pretrained:
+                weights = torch.load("../../../model_weights/resnet50-0676ba61.pth")
+                resnet = torchvision.models.resnet50(pretrained=False) 
+                resnet.load_state_dict(weights)
+            
+                self.features = nn.Sequential(OrderedDict(list(resnet.named_children())[:-2]))
+                
+                if freeze_base:
+                    for layer in self.features.parameters():
+                        layer.requires_grad = False
+            else:
+                self.features = resnet50(norm=enc_norm)
         else:
             raise Exception('enc_model must be resnet18, resnet34, or resnet50!')  
         

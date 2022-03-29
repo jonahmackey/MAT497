@@ -12,7 +12,6 @@ class WarmUpLR(object):
         optimizer (Optimizer): Wrapped optimizer.
         lr_max (float): Max learning rate acheived after warmup stage.
         t_warmup (int): Number of warm up steps.
-        last_epoch (int): The index of last epoch. Default: -1.
     """
 
     def __init__(self, optimizer, lr_max, t_warmup):

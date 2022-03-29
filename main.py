@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torchvision
 from dataset.socal import SOCAL
 from torch.utils.data import DataLoader
 from net.aasp_model import AASP_Model
@@ -8,16 +9,12 @@ import pandas as pd
 import torch.optim as optim
 from utils.lr_scheduler import WarmUpLR
 from utils.meters import AverageMeter
-from torchvision.models.video import r2plus1d_18
+from collections import OrderedDict
 
 if __name__ == "__main__":
-    a = AverageMeter()
     
-    a = torch.rand(1, 3, 60, 112, 112)
+    data = SOCAL(frame_res=64, train=False, dataset_path="../../socal")
     
-    model = r2plus1d_18(pretrained=True)
-    print(model.state_dict)
-    model.eval()
+    for frames, sf, ebl in data:
+        print(sf)
     
-    out = model(a)
-    print(out.shape)
