@@ -29,10 +29,10 @@ from experiment.experiment import Experiment
 #     0
 # ]
 
-freeze_list = [
-    True, 
-    False
-]
+# freeze_list = [
+#     True, 
+#     False
+# ]
 
 # Transformer
 # num_layer_list = [
@@ -64,27 +64,27 @@ lr_max_list = [
     5e-4
 ]
 
-# dropout_list = [
-#     0.0,
-#     0.1, #
-# ]
+dropout_list = [
+    0.0,
+    0.1, #
+]
 
-for freeze_idx in range(2): 
+for dropout_idx in range(2):
     for norm_first_idx in range(2): 
         for t_warmup_idx in range(3):
             for lr_max_idx in range(3): 
 
                 dataset_opts  = {
                     'frame_res': 64, 
-                    'downsample_fac': 2, 
+                    'downsample_fac': 4, 
                     'dataset_path': '../../../socal' 
                 }
 
                 img_enc_opts = {
-                    'enc_model': 'resnet18',
+                    'enc_model': 'resnet50',
                     'enc_norm': 'BN', 
                     'pretrained': True,
-                    'freeze_base': freeze_list[freeze_idx]
+                    'freeze_base': True
                 }
                 
                 transformer_opts = {
@@ -93,7 +93,7 @@ for freeze_idx in range(2):
                     'embed_dim': 512,
                     'norm_first': norm_first_list[norm_first_idx], 
                     'pe': True,
-                    'dropout': 0.1, 
+                    'dropout': dropout_list[dropout_idx], 
                 }
 
                 train_opts   = {
@@ -101,7 +101,7 @@ for freeze_idx in range(2):
                     'optim': 'Adam', 
                     'betas': (0.9, 0.98), 
                     'weight_decay': 1e-4, 
-                    'epochs': 300, 
+                    'epochs': 200, 
                     'initial_lr': 0.0,
                     'lr_max': lr_max_list[lr_max_idx],
                     't_warmup': t_warmup_list[t_warmup_idx],

@@ -13,8 +13,11 @@ from collections import OrderedDict
 
 if __name__ == "__main__":
     
-    data = SOCAL(frame_res=64, train=False, dataset_path="../../socal")
+    test_data = SOCAL(frame_res=64, train=False, dataset_path="../../socal")
+    train_data = SOCAL(frame_res=64, train=True, dataset_path="../../socal")
     
-    for frames, sf, ebl in data:
-        print(sf)
+    print(len(test_data))
+    print(len(train_data))
+    
+    
     

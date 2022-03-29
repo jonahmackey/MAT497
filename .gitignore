@@ -114,6 +114,6 @@ dmypy.json
 .pyre/
 
 # # # Folders/files
-# /alpha_sample
-# /Notes.md
-# /main.py
+/alpha_sample
+/Notes.md
+/main.py
