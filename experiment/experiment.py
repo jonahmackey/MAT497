@@ -47,7 +47,6 @@ class Experiment:
         self.model = AASP_Model(enc_model=self.enc_model, 
                                 enc_norm=self.enc_norm,
                                 pretrained=self.pretrained,
-                                freeze_base=self.freeze_base,
                                 num_layers=self.num_layers,
                                 num_heads=self.num_heads,
                                 embed_dim=self.embed_dim,
@@ -55,6 +54,10 @@ class Experiment:
                                 pe=self.pe,
                                 dropout=self.dropout)
         self.model.to(self.device)
+        
+        if self.freeze_base:
+            for layer in self.model.features.parameters():
+                layer.requires_grad = False
         
         # loss
         if self.task == 'SF':

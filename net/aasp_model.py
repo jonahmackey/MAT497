@@ -8,7 +8,7 @@ from collections import OrderedDict
 
 
 class AASP_Model(nn.Module):
-    def __init__(self, enc_model: str, enc_norm: str, pretrained: bool, freeze_base: bool, num_layers: int, num_heads: int, 
+    def __init__(self, enc_model: str, enc_norm: str, pretrained: bool, num_layers: int, num_heads: int, 
                  embed_dim: int, norm_first: bool, pe: bool, dropout: float):
         """AASP (Automatic Assessment of Neurosurgical Performance) Model.
 
@@ -33,7 +33,6 @@ class AASP_Model(nn.Module):
         self.pe = pe
         self.dropout = dropout
         self.pretrained = pretrained
-        self.freeze_base = freeze_base
         
         if enc_model == 'resnet18':
             if pretrained:
@@ -42,10 +41,6 @@ class AASP_Model(nn.Module):
                 resnet.load_state_dict(weights)
                 
                 self.features = nn.Sequential(OrderedDict(list(resnet.named_children())[:-2])) 
-                
-                if freeze_base:
-                    for layer in self.features.parameters():
-                        layer.requires_grad = False
             else:
                 self.features = resnet18(norm=enc_norm)
                 
@@ -56,10 +51,7 @@ class AASP_Model(nn.Module):
                 resnet.load_state_dict(weights)
                 
                 self.features = nn.Sequential(OrderedDict(list(resnet.named_children())[:-2])) 
-                
-                if freeze_base:
-                    for layer in self.features.parameters():
-                        layer.requires_grad = False
+
             else:
                 self.features = resnet34(norm=enc_norm)
                 
@@ -71,9 +63,6 @@ class AASP_Model(nn.Module):
             
                 self.features = nn.Sequential(OrderedDict(list(resnet.named_children())[:-2]))
                 
-                if freeze_base:
-                    for layer in self.features.parameters():
-                        layer.requires_grad = False
             else:
                 self.features = resnet50(norm=enc_norm)
         else:
