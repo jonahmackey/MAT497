@@ -25,7 +25,8 @@ class Experiment:
         except:
             pass
         
-        self.configuration = f"task={self.task},enc_model={self.enc_model},enc_norm={self.enc_norm},num_layers={self.num_layers},norm_first={self.norm_first},pe={self.pe},lr_max={self.lr_max},t_warmup={self.t_warmup},freeze_base={self.freeze_base}".replace(".", "p")
+        self.configuration = f"task={self.task},enc_model={self.enc_model},enc_norm={self.enc_norm},num_layers={self.num_layers},".replace(".", "p") + \
+            f"norm_first={self.norm_first},pe={self.pe},lr_max={self.lr_max},t_warmup={self.t_warmup},freeze_base={self.freeze_base},dropout={self.dropout}".replace(".", "p")
         
         # datasets and loaders
         socal_train = SOCAL(train=True, 

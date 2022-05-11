@@ -97,8 +97,8 @@ def multi_head_attention_forward(
           head of shape :math:`(num_heads, L, S)` when input is unbatched or :math:`(N, num_heads, L, S)`.
     """
     tens_ops = (query, key, value, in_proj_weight, in_proj_bias, bias_k, bias_v, out_proj_weight, out_proj_bias)
-    if has_torch_function(tens_ops):
-        return handle_torch_function(
+    if F.has_torch_function(tens_ops):
+        return F.handle_torch_function(
             multi_head_attention_forward,
             tens_ops,
             query,

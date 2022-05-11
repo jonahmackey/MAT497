@@ -75,7 +75,11 @@ class AverageMeter(Meter):
         self.val = value
         self.sum += value
         self.n += n
-        self.avg += self.sum / self.n
+        
+        if self.n == 0:
+            self.avg = self.sum
+        else:
+            self.avg = self.sum / self.n
         
     def value(self):
         return self.avg
