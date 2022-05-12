@@ -27,7 +27,6 @@ numpy==1.19.5
 opencv-python==4.5.5.64
 packaging==20.8
 pandas==1.4.1
-Pillow==8.1.0
 pluggy==0.13.1
 py==1.10.0
 pycodestyle==2.6.0
